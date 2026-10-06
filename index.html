@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JetClean - Sistema de Gestão para Lava-Rápido</title>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --accent: #0f172a;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text); padding: 20px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        header h1 { font-size: 1.4rem; color: var(--primary-dark); }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-btn { background: #e0f2fe; color: var(--primary-dark); border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .nav-btn.active { background: var(--primary); color: white; }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .main-container { display: grid; grid-template-columns: 420px 1fr; gap: 20px; }
+        @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; } }
+        
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h2 { font-size: 1.1rem; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; color: #334155; }
+        
+        .demo-banner { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px; border-radius: 8px; font-size: 0.8rem; margin-bottom: 15px; text-align: center; line-height: 1.4; }
+
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #fff; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
+        
+        /* Botão de Foto Retangular em Verde Bem Claro abrindo direto a câmera */
+        .photo-upload-box {
+            border: 2px dashed #4ade80;
+            background: #dcfce7;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 15px;
+        }
+        .photo-upload-box:hover { background: #bbf7d0; }
+        .photo-upload-box input[type="file"] { display: none; }
+        .photo-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-top: 10px; display: none; border: 1px solid #86efac; }
+        .photo-label-text { font-weight: 700; color: #166534; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        button.action-btn { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        button.action-btn:hover { background: var(--primary-dark); }
+        
+        /* Quadro Kanban */
+        .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        @media (max-width: 1100px) { .kanban-board { grid-template-columns: 1fr; } }
+        
+        .kanban-column { background: #f1f5f9; border-radius: 10px; padding: 15px; min-height: 450px; display: flex; flex-direction: column; gap: 10px; }
+        .kanban-column h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        
+        .ticket-item { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid var(--primary); display: flex; flex-direction: column; gap: 6px; position: relative; }
+        .ticket-item .plate { font-weight: 700; font-size: 1.1rem; color: #0f172a; }
+        .ticket-item .info { font-size: 0.85rem; color: #64748b; }
+        .ticket-item img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; margin-top: 5px; border: 1px solid var(--border); }
+        
+        .ticket-actions { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+        .ticket-actions button { padding: 6px 10px; font-size: 0.75rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; color: white; }
+        .btn-advance { background: var(--success); }
+        .btn-delete { background: var(--danger); }
+        .btn-back { background: #64748b; }
+
+        /* Estilos Área Admin / Relatórios */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .metric-card { background: #f0f9ff; border: 1px solid #bae6fd; padding: 15px; border-radius: 10px; text-align: center; }
+        .metric-card h4 { font-size: 0.85rem; color: #0369a1; margin-bottom: 5px; }
+        .metric-card p { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
+
+        table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
+        table.data-table th, table.data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        table.data-table th { background: #f1f5f9; color: #475569; }
+
+        .filter-box { display: flex; gap: 10px; margin-bottom: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-box .form-group { flex: 1; min-width: 150px; margin-bottom: 0; }
+
+        #print-ticket-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-ticket-area, #print-ticket-area * { visibility: visible; }
+            #print-ticket-area { position: absolute; left: 0; top: 0; width: 300px; font-family: monospace; padding: 10px; background: white; display: block !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🚗 JetClean - Gestão Operacional</h1>
+        <div class="nav-buttons">
+            <button class="nav-btn active" onclick="switchView('operacional')">Pátio & Operação</button>
+            <button class="nav-btn" onclick="checkAdminAccess()">Área do Administrador</button>
+        </div>
+    </header>
+
+    <!-- VIEW 1: OPERACIONAL (PÁTIO) -->
+    <div id="view-operacional" class="view-section active">
+        <div class="main-container">
+            <!-- Formulário de Entrada -->
+            <div class="card">
+                <h2>Nova Ordem de Serviço</h2>
+                
+                <div class="demo-banner">
+                    💡 <b>Prévia Comercial Demonstrativa:</b> Modelo adaptável e personalizável para otimizar o atendimento de pátio e caixa.
+                </div>
+
+                <form id="osForm">
+                    
+                    <!-- Botão de Foto Retangular em Verde Bem Claro (Abre direto a câmera) -->
+                    <div class="photo-upload-box" onclick="document.getElementById('fotoAvaria').click();">
+                        <div class="photo-label-text">
+                            📷 Tocar para Abrir Câmera / Foto da Placa
+                        </div>
+                        <input type="file" id="fotoAvaria" accept="image/*" capture="environment">
+                        <img id="previewImg" class="photo-preview" alt="Pré-visualização da foto">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Placa do Veículo:</label>
+                        <input type="text" id="placa" placeholder="Ex: ABC-1D23" required style="text-transform: uppercase; font-weight: bold; font-size: 1.1rem;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Modelo / Cor:</label>
+                        <input type="text" id="modelo" placeholder="Ex: Corolla Prata" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Porte / Tipo de Veículo:</label>
+                        <select id="porte">
+                            <option value="Moto">Moto</option>
+                            <option value="Carro Pequeno (Hatch/Sedan Compacto)" selected>Carro Pequeno (Hatch / Sedan)</option>
+                            <option value="Carro Grande / SUV / Picape">Carro Grande / SUV / Picape</option>
+                            <option value="Caminhão / Ônibus / Van">Caminhão / Ônibus / Van</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Serviço & Preço Médio (Web):</label>
+                        <select id="servico">
+                            <option value="Lavagem Externa Simples|35.00">Lavagem Externa Simples - R$ 35,00</option>
+                            <option value="Lavagem Completa (Int+Ext)|55.00" selected>Lavagem Completa (Int + Ext) - R$ 55,00</option>
+                            <option value="Lavagem Completa + Cera|95.00">Lavagem Completa + Cera - R$ 95,00</option>
+                            <option value="Higienização de Bancos/Estofados|180.00">Higienização de Bancos/Estofados - R$ 180,00</option>
+                            <option value="Lavagem Técnica de Motor|90.00">Lavagem Técnica de Motor - R$ 90,00</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Quem Manobrou (Recepção):</label>
+                        <select id="manobrista">
+                            <option value="Atendente (Recepção)">Atendente (Recepção)</option>
+                            <option value="Colaborador 1">Colaborador 1</option>
+                            <option value="Colaborador 2">Colaborador 2</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Lavador Responsável:</label>
+                        <select id="lavador">
+                            <option value="Equipe 1">Equipe 1</option>
+                            <option value="Equipe 2">Equipe 2</option>
+                            <option value="Geral">Geral</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="action-btn">Adicionar à Fila & Imprimir Ticket</button>
+                </form>
+            </div>
+
+            <!-- Quadro Kanban / Quadro Branco -->
+            <div class="card" style="background: transparent; box-shadow: none; padding: 0;">
+                <div class="kanban-board">
+                    <div class="kanban-column" id="col-fila">
+                        <h3>⏳ Fila de Espera <span id="count-fila">(0)</span></h3>
+                    </div>
+                    <div class="kanban-column" id="col-lavagem">
+                        <h3>🚿 Em Lavagem (Box) <span id="count-lavagem">(0)</span></h3>
+                    </div>
+                    <div class="kanban-column" id="col-pronto">
+                        <h3>✅ Prontos / Entrega <span id="count-pronto">(0)</span></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: ADMINISTRADOR (RELATÓRIOS E FECHAMENTO) -->
+    <div id="view-admin" class="view-section">
+        <div class="card">
+            <h2>🔒 Painel Administrativo & Fechamento de Caixa</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h4>Faturamento Total (Filtrado)</h4>
+                    <p id="metricFaturamento">R$ 0,00</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Total de Veículos Atendidos</h4>
+                    <p id="metricQtd">0</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Período Analisado</h4>
+                    <p id="metricPeriodo" style="font-size: 1rem; margin-top: 5px;">Todos</p>
+                </div>
+            </div>
+
+            <div class="filter-box">
+                <div class="form-group">
+                    <label>Filtrar por Data Específica:</label>
+                    <input type="date" id="filtroData" onchange="aplicarFiltros()">
+                </div>
+                <div class="form-group">
+                    <label>Filtro Rápido (Período):</label>
+                    <select id="filtroPeriodo" onchange="aplicarFiltros()">
+                        <option value="todos">Todos os Registros</option>
+                        <option value="hoje">Hoje</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="mes">Este Mês</option>
+                        <option value="ano">Este Ano</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button class="action-btn" onclick="limparFiltros()" style="background: #64748b;">Limpar Filtros</button>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 25px;">Planilha de Serviços Realizados</h2>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Placa / Modelo</th>
+                            <th>Porte</th>
+                            <th>Serviço</th>
+                            <th>Valor</th>
+                            <th>Recepção</th>
+                            <th>Lavador</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaRelatorio">
+                        <!-- Dados inseridos via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de Impressão Oculta para Impressora Bluetooth (Formato Térmico) -->
+    <div id="print-ticket-area">
+        <div style="text-align: center; font-weight: bold; font-size: 14px;">JETCLEAN SISTEMA</div>
+        <div style="text-align: center; font-size: 10px;">Gestão Inteligente de Lava-Rápido</div>
+        <div style="text-align: center; font-size: 10px; margin-bottom: 5px;">--------------------------------</div>
+        <div style="font-size: 12px;"><b>TICKET N°:</b> <span id="p-ticket-id"></span></div>
+        <div style="font-size: 12px;"><b>DATA:</b> <span id="p-data"></span></div>
+        <div style="font-size: 12px;"><b>PLACA:</b> <span id="p-placa" style="font-size: 14px;"></span></div>
+        <div style="font-size: 12px;"><b>MODELO:</b> <span id="p-modelo"></span></div>
+        <div style="font-size: 12px;"><b>PORTE:</b> <span id="p-porte"></span></div>
+        <div style="font-size: 12px;"><b>SERVIÇO:</b> <span id="p-servico"></span></div>
+        <div style="font-size: 12px;"><b>VALOR:</b> R$ <span id="p-valor"></span></div>
+        <div style="font-size: 12px;"><b>RECEPÇÃO:</b> <span id="p-manobrista"></span></div>
+        <div style="font-size: 10px; margin-top: 5px;">--------------------------------</div>
+        <div style="text-align: center; font-size: 9px; font-weight: bold;">[ PRÉVIA COMERCIAL ]</div>
+        <div style="text-align: center; font-size: 8px;">Automatize seu pátio e caixa</div>
+    </div>
+
+    <script>
+        let ordens = [];
+        let fotoAtualBase64 = "";
+        let contadorTickets = 1000;
+
+        document.getElementById('fotoAvaria').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    fotoAtualBase64 = uploadEvent.target.result;
+                    const preview = document.getElementById('previewImg');
+                    preview.src = fotoAtualBase64;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function switchView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+            if (viewName === 'operacional') {
+                document.getElementById('view-operacional').classList.add('active');
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            } else if (viewName === 'admin') {
+                document.getElementById('view-admin').classList.add('active');
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                atualizarPainelAdmin();
+            }
+        }
+
+        function checkAdminAccess() {
+            const senha = prompt("Digite a senha de Administrador (senha padrão: admin):");
+            if (senha === "admin") {
+                switchView('admin');
+            } else if (senha !== null) {
+                alert("Senha incorreta! Acesso negado.");
+            }
+        }
+
+        const form = document.getElementById('osForm');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            contadorTickets++;
+            const servicoRaw = document.getElementById('servico').value.split('|');
+            const agora = new Date();
+
+            const novaOS = {
+                id: Date.now(),
+                ticketNum: contadorTickets,
+                placa: document.getElementById('placa').value.toUpperCase(),
+                modelo: document.getElementById('modelo').value,
+                porte: document.getElementById('porte').value,
+                servicoNome: servicoRaw[0],
+                valor: parseFloat(servicoRaw[1]),
+                manobrista: document.getElementById('manobrista').value,
+                lavador: document.getElementById('lavador').value,
+                foto: fotoAtualBase64 || '',
+                status: 'fila',
+                dataIso: agora.toISOString().split('T')[0],
+                dataTexto: agora.toLocaleString('pt-BR')
+            };
+
+            ordens.push(novaOS);
+
+            const vias = prompt("Veículo registrado com sucesso!\nQuantas vias deseja imprimir via Bluetooth? (Digite 1 ou 2):", "1");
+            if (vias === "1" || vias === "2") {
+                imprimirTicketBluetooth(novaOS, parseInt(vias));
+            }
+
+            form.reset();
+            fotoAtualBase64 = "";
+            document.getElementById('previewImg').style.display = 'none';
+            renderBoard();
+        });
+
+        function imprimirTicketBluetooth(os, qtdVias) {
+            document.getElementById('p-ticket-id').innerText = os.ticketNum;
+            document.getElementById('p-data').innerText = os.dataTexto;
+            document.getElementById('p-placa').innerText = os.placa;
+            document.getElementById('p-modelo').innerText = os.modelo;
+            document.getElementById('p-porte').innerText = os.porte;
+            document.getElementById('p-servico').innerText = os.servicoNome;
+            document.getElementById('p-valor').innerText = os.valor.toFixed(2);
+            document.getElementById('p-manobrista').innerText = os.manobrista;
+
+            for (let i = 0; i < qtdVias; i++) {
+                window.print();
+            }
+        }
+
+        function mudarStatus(id, novoStatus) {
+            const item = ordens.find(o => o.id === id);
+            if(item) {
+                item.status = novoStatus;
+                renderBoard();
+            }
+        }
+
+        function excluirComoAdmin(id) {
+            const senha = prompt("🔒 Área Restrita: Digite a senha de administrador para excluir este registro:");
+            if (senha === "admin") {
+                ordens = ordens.filter(o => o.id !== id);
+                renderBoard();
+                atualizarPainelAdmin();
+                alert("Registro excluído com sucesso pelo administrador.");
+            } else if (senha !== null) {
+                alert("Senha incorreta. A exclusão foi cancelada.");
+            }
+        }
+
+        function renderBoard() {
+            const colFila = document.getElementById('col-fila');
+            const colLavagem = document.getElementById('col-lavagem');
+            const colPronto = document.getElementById('col-pronto');
+
+            colFila.innerHTML = `<h3>⏳ Fila de Espera <span id="count-fila">(${ordens.filter(o=>o.status==='fila').length})</span></h3>`;
+            colLavagem.innerHTML = `<h3>🚿 Em Lavagem (Box) <span id="count-lavagem">(${ordens.filter(o=>o.status==='lavagem').length})</span></h3>`;
+            colPronto.innerHTML = `<h3>✅ Prontos / Entrega <span id="count-pronto">(${ordens.filter(o=>o.status==='pronto').length})</span></h3>`;
+
+            ordens.forEach(o => {
+                const div = document.createElement('div');
+                div.className = 'ticket-item';
+                div.innerHTML = `
+                    <div class="plate">#${o.ticketNum} - ${o.placa} <span style="font-size:0.8rem; font-weight:normal;">(${o.porte})</span></div>
+                    <div class="info">🚗 <b>Modelo:</b> ${o.modelo}</div>
+                    <div class="info">🛠️ <b>Serviço:</b> ${o.servicoNome} (R$ ${o.valor.toFixed(2)})</div>
+                    <div class="info">🧽 <b>Lavador:</b> ${o.lavador}</div>
+                    ${o.foto ? `<img src="${o.foto}" alt="Foto de Avaria">` : ''}
+                    <div class="ticket-actions">
+                        ${o.status === 'fila' ? `<button class="btn-advance" onclick="mudarStatus(${o.id}, 'lavagem')">▶ Lavar</button>` : ''}
+                        ${o.status === 'lavagem' ? `<button class="btn-advance" onclick="mudarStatus(${o.id}, 'pronto')">✔ Finalizar</button>` : ''}
+                        ${o.status === 'pronto' ? `<button class="btn-back" onclick="mudarStatus(${o.id}, 'lavagem')">↩ Retornar</button>` : ''}
+                        <button class="btn-delete" onclick="excluirComoAdmin(${o.id})">Excluir 🔒</button>
+                    </div>
+                `;
+
+                if(o.status === 'fila') colFila.appendChild(div);
+                if(o.status === 'lavagem') colLavagem.appendChild(div);
+                if(o.status === 'pronto') colPronto.appendChild(div);
+            });
+        }
+
+        function atualizarPainelAdmin(listaFiltrada = ordens) {
+            const tbody = document.getElementById('tabelaRelatorio');
+            tbody.innerHTML = '';
+            let faturamentoTotal = 0;
+
+            listaFiltrada.forEach(o => {
+                faturamentoTotal += o.valor;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${o.dataTexto}</td>
+                    <td><b>#${o.ticketNum} - ${o.placa}</b><br><span style="font-size:0.8rem; color:#64748b;">${o.modelo}</span></td>
+                    <td>${o.porte}</td>
+                    <td>${o.servicoNome}</td>
+                    <td>R$ ${o.valor.toFixed(2)}</td>
+                    <td>${o.manobrista}</td>
+                    <td>${o.lavador}</td>
+                    <td><button onclick="excluirComoAdmin(${o.id})" style="background:#ef4444; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">Excluir 🔒</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('metricFaturamento').innerText = `R$ ${faturamentoTotal.toFixed(2)}`;
+            document.getElementById('metricQtd').innerText = listaFiltrada.length;
+        }
+
+        function aplicarFiltros() {
+            const dataSelecionada = document.getElementById('filtroData').value;
+            const periodoSelecionado = document.getElementById('filtroPeriodo').value;
+            let resultado = [...ordens];
+            let textoPeriodo = "Personalizado";
+
+            if (dataSelecionada) {
+                resultado = resultado.filter(o => o.dataIso === dataSelecionada);
+                textoPeriodo = `Data: ${dataSelecionada.split('-').reverse().join('/')}`;
+            } else if (periodoSelecionado === 'hoje') {
+                const hojeStr = new Date().toISOString().split('T')[0];
+                resultado = resultado.filter(o => o.dataIso === hojeStr);
+                textoPeriodo = "Hoje";
+            } else if (periodoSelecionado === 'todos') {
+                textoPeriodo = "Todos os Registros";
+            } else {
+                textoPeriodo = periodoSelecionado.toUpperCase();
+            }
+
+            document.getElementById('metricPeriodo').innerText = textoPeriodo;
+            atualizarPainelAdmin(resultado);
+        }
+
+        function limparFiltros() {
+            document.getElementById('filtroData').value = '';
+            document.getElementById('filtroPeriodo').value = 'todos';
+            document.getElementById('metricPeriodo').innerText = 'Todos';
+            atualizarPainelAdmin(ordens);
+        }
+    </script>
+</body>
+</html>
